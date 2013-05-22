@@ -1,0 +1,57 @@
+/*
+Copyright © 2013 Code for the People Ltd
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+*/
+
+#menu-posts-video .wp-menu-image {
+	background: url( 'mediaicons.png' ) 6px -245px no-repeat !important;
+}
+
+#menu-posts-video:hover .wp-menu-image,
+#menu-posts-video.wp-has-current-submenu .wp-menu-image {
+	background-position:6px -245px !important;
+}
+
+#icon-edit.icon32-posts-video {
+	background: url( 'mediaicons.png' ) 0px -300px no-repeat;
+}
+
+#video-library-url-div {
+	margin: 0 0 20px;
+	position: relative;
+}
+
+#video-library-url {
+	padding: 3px 8px;
+	font-size: 1.7em;
+	line-height: 100%;
+	width: 100%;
+	outline: none;
+}
+
+#video-library-url-div .spinner {
+	position: absolute;
+	right: 7px;
+	top: 9px;
+	float: none;
+	margin: 0;
+}
+
+#video-library-url-div .favicon {
+	position: absolute;
+	right: 7px;
+	top: 9px;
+	width: 16px;
+	height: 16px;
+	display: block;
+}
