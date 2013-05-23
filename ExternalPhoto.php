@@ -65,7 +65,7 @@ class ExternalPhoto {
 			'post_title'     => $post->post_title . ' thumbnail',
 			'post_status'    => 'inherit'
 		);
-		$attach_id = wp_insert_attachment( $postinfo, $attachment['file'], $postid );
+		$attach_id = wp_insert_attachment( $postinfo, $attachment['file'], $post_id );
 
 		if ( !function_exists( 'wp_generate_attachment_data' ) )
 			require_once( ABSPATH . 'wp-admin/includes/image.php' );
