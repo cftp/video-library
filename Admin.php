@@ -83,36 +83,8 @@ class Admin {
 			) );
 		}
 
-		if ( post_type_supports( $post->post_type, 'thumbnail' ) and ! has_post_thumbnail( $post->ID ) ) {
-
-			switch ( $details->type ) {
-
-				case 'photo':
-					$field = 'url';
-					break;
-
-				case 'rich':
-				case 'link':
-				case 'video':
-					$field = 'thumbnail_url';
-					break;
-
-			}
-
-			if ( isset( $details->$field ) and $details->$field ) {
-
-				$filename = $post->ID . '-' . basename( $details->$field );
-				$photo    = new ExternalPhoto( $details->$field );
-
-				if ( $photo->import( $filename ) ) {
-					$photo->attach_to( $post );
-					$details->imported_thumbnail    = $photo->get_attachment();
-					$details->imported_thumbnail_id = $photo->get_attachment_ID();
-				}
-
-			}
-
-		}
+		if ( post_type_supports( $post->post_type, 'thumbnail' ) and ! has_post_thumbnail( $post->ID ) )
+			$this->set_thumbnail( $post, $details );
 
 		if ( $details->provider_url )
 			$details->favicon = $this->favicon( $details->provider_url );
@@ -296,37 +268,10 @@ class Admin {
 				return;
 			}
 
-			$media->update_details();
+			$details = $media->update_details();
 
-			if ( post_type_supports( $post_type, 'thumbnail' ) and ! has_post_thumbnail( $post->ID ) ) {
-
-				switch ( $details->type ) {
-
-					case 'photo':
-						$field = 'url';
-						break;
-
-					case 'rich':
-					case 'link':
-					case 'video':
-						$field = 'thumbnail_url';
-						break;
-
-				}
-
-				if ( $thumbnail_url = $media->get_field( $field ) ) {
-
-					$filename = $post->post_name . '-' . basename( $thumbnail_url );
-					$photo    = new ExternalPhoto( $thumbnail_url );
-
-					if ( $photo->import( $filename ) ) {
-						$photo->attach_to( $post );
-						set_post_thumbnail( $post->ID, $photo->get_attachment_ID() );
-					}
-
-				}
-
-			}
+			if ( post_type_supports( $post_type, 'thumbnail' ) and ! has_post_thumbnail( $post->ID ) )
+				$this->set_thumbnail( $post, $details );
 
 			if ( empty( $post->post_title ) or empty( $post->post_content ) ) {
 
@@ -351,6 +296,39 @@ class Admin {
 			$media->delete_url();
 
 			# @TODO delete associated terms
+
+		}
+
+	}
+
+	public function set_thumbnail( $post_id, $details ) {
+
+		$post = get_post( $post_id );
+
+		switch ( $details->type ) {
+
+			case 'photo':
+				$field = 'url';
+				break;
+
+			case 'rich':
+			case 'link':
+			case 'video':
+			default:
+				$field = 'thumbnail_url';
+				break;
+
+		}
+
+		if ( isset( $details->$field ) and $thumbnail_url = $details->$field ) {
+
+			$filename = $post->post_name . '-' . basename( $thumbnail_url );
+			$photo    = new ExternalPhoto( $thumbnail_url );
+
+			if ( $photo->import( $filename ) ) {
+				$photo->attach_to( $post );
+				set_post_thumbnail( $post->ID, $photo->get_attachment_ID() );
+			}
 
 		}
 

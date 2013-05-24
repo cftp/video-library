@@ -90,7 +90,7 @@ class PostMedia {
 			$embed_key => $details->html
 		) );
 
-		return true;
+		return $this->details;
 
 	}
 
