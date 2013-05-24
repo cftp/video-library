@@ -83,8 +83,10 @@ class Admin {
 			) );
 		}
 
-		if ( post_type_supports( $post->post_type, 'thumbnail' ) and ! has_post_thumbnail( $post->ID ) )
-			$this->set_thumbnail( $post, $details );
+		if ( post_type_supports( $post->post_type, 'thumbnail' ) and ! has_post_thumbnail( $post->ID ) ) {
+			if ( $thumb = $this->fetch_thumbnail( $post, $details ) )
+				$details->imported_thumbnail_id = $thumb->get_attachment_ID();
+		}
 
 		if ( $details->provider_url )
 			$details->favicon = $this->favicon( $details->provider_url );
@@ -270,8 +272,10 @@ class Admin {
 
 			$details = $media->update_details();
 
-			if ( post_type_supports( $post_type, 'thumbnail' ) and ! has_post_thumbnail( $post->ID ) )
-				$this->set_thumbnail( $post, $details );
+			if ( post_type_supports( $post_type, 'thumbnail' ) and ! has_post_thumbnail( $post->ID ) ) {
+				if ( $thumb = $this->fetch_thumbnail( $post, $details ) )
+					set_post_thumbnail( $post->ID, $thumb->get_attachment_ID() );
+			}
 
 			if ( empty( $post->post_title ) or empty( $post->post_content ) ) {
 
@@ -301,7 +305,7 @@ class Admin {
 
 	}
 
-	public function set_thumbnail( $post_id, $details ) {
+	public function fetch_thumbnail( $post_id, $details ) {
 
 		$post = get_post( $post_id );
 
@@ -327,10 +331,12 @@ class Admin {
 
 			if ( $photo->import( $filename ) ) {
 				$photo->attach_to( $post );
-				set_post_thumbnail( $post->ID, $photo->get_attachment_ID() );
+				return $photo;
 			}
 
 		}
+
+		return false;
 
 	}
 
