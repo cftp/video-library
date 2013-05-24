@@ -107,7 +107,7 @@ class PostMedia {
 
 		$url = esc_url_raw( $url );
 
-		if ( ! VideoLibrary::init()->get_oembed_provider( $url ) )
+		if ( ! VideoLibrary::init()->get_oembed_provider( $url, $this->post->post_type ) )
 			return false;
 
 		$this->url = $url;
@@ -133,7 +133,7 @@ class PostMedia {
 	protected function oembed() {
 
 		if ( ! $this->oembed )
-			$this->oembed = new oEmbed( $this->url );
+			$this->oembed = new oEmbed( $this->url, $this->post->post_type );
 
 		return $this->oembed;
 

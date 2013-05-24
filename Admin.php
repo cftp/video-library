@@ -51,6 +51,13 @@ class Admin {
 		if ( ! current_user_can( 'edit_posts' ) )
 			die( '-1' );
 
+		if ( ! isset( $_POST['post_id'] ) or ! $post = get_post( absint( $_POST['post_id'] ) ) ) {
+			wp_send_json_error( array(
+				'error_code'    => 'no_post',
+				'error_message' => __( 'Invalid post ID.', 'video-library' )
+			) );
+		}
+
 		if ( ! isset( $_POST['url'] ) or ! $url = trim( stripslashes( $_POST['url'] ) ) ) {
 			wp_send_json_error( array(
 				'error_code'    => 'no_url',
@@ -60,33 +67,49 @@ class Admin {
 
 		$url = esc_url_raw( $url );
 
-		if ( ! VideoLibrary::init()->get_oembed_provider( $url ) ) {
+		if ( ! VideoLibrary::init()->get_oembed_provider( $url, $post->post_type ) ) {
 			wp_send_json_error( array(
 				'error_code'    => 'no_provider',
-				'error_message' => __( 'The video URL you entered is not supported.', 'video-library' ) # @TODO improve this message
+				'error_message' => __( 'The URL you entered is not supported.', 'video-library' )
 			) );
 		}
 
-		$oembed = new oEmbed( $url );
+		$oembed = new oEmbed( $url, $post->post_type );
 
 		if ( ! $details = $oembed->fetch_details( $this->preview_args ) ) {
 			wp_send_json_error( array(
 				'error_code'    => 'no_results',
-				'error_message' => __( 'Video details could not be fetched. Please try again shortly.', 'video-library' )
+				'error_message' => __( 'Item details could not be fetched. Please try again shortly.', 'video-library' )
 			) );
 		}
 
-		$post = get_post( absint( $_POST['post_id'] ) );
+		if ( post_type_supports( $post->post_type, 'thumbnail' ) and ! has_post_thumbnail( $post->ID ) ) {
 
-		if ( $post and !has_post_thumbnail( $post->ID ) and $details->thumbnail_url ) {
+			switch ( $details->type ) {
 
-			$filename = $post->ID . '-' . basename( $details->thumbnail_url );
-			$photo    = new ExternalPhoto( $details->thumbnail_url );
+				case 'photo':
+					$field = 'url';
+					break;
 
-			if ( $photo->import( $filename ) ) {
-				$photo->attach_to( $post );
-				$details->imported_thumbnail    = $photo->get_attachment();
-				$details->imported_thumbnail_id = $photo->get_attachment_ID();
+				case 'rich':
+				case 'link':
+				case 'video':
+					$field = 'thumbnail_url';
+					break;
+
+			}
+
+			if ( isset( $details->$field ) and $details->$field ) {
+
+				$filename = $post->ID . '-' . basename( $details->$field );
+				$photo    = new ExternalPhoto( $details->$field );
+
+				if ( $photo->import( $filename ) ) {
+					$photo->attach_to( $post );
+					$details->imported_thumbnail    = $photo->get_attachment();
+					$details->imported_thumbnail_id = $photo->get_attachment_ID();
+				}
+
 			}
 
 		}
@@ -105,7 +128,7 @@ class Admin {
 		if ( function_exists('bbl_get_base_post_type') )
 			$post_type = bbl_get_base_post_type( $post_type );
 
-		if ( 'video' == $post_type )
+		if ( post_type_supports( $post_type, 'video-library' ) )
 			return false;
 
 		return $maybe_empty;
@@ -124,11 +147,14 @@ class Admin {
 
 	public function action_add_meta_boxes( $post_type, $post ) {
 
+		if ( ! post_type_supports( $post_type, 'video-library' ) )
+			return;
+
 		add_meta_box(
 			'video-library-meta',
-			__( 'Video Preview', 'video-library' ),
+			__( 'Preview', 'video-library' ),
 			array( $this, 'metabox_meta' ),
-			'video',
+			$post_type,
 			'side'
 		);
 
@@ -141,7 +167,7 @@ class Admin {
 		if ( function_exists('bbl_get_base_post_type') )
 			$post_type = bbl_get_base_post_type( $post_type );
 
-		if ( 'video' != $post_type )
+		if ( ! post_type_supports( $post_type, 'video-library' ) )
 			return;
 
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
@@ -190,10 +216,10 @@ class Admin {
 
 		$post_type = get_current_screen()->post_type;
 
-		if ( function_exists('bbl_get_base_post_type') )
+		if ( function_exists( 'bbl_get_base_post_type' ) )
 			$post_type = bbl_get_base_post_type( $post_type );
 
-		if ( 'video' != $post_type )
+		if ( ! post_type_supports( $post_type, 'video-library' ) )
 			return;
 
 		$post  = get_post( get_the_ID() );
@@ -243,12 +269,12 @@ class Admin {
 		if ( $this->no_recursion )
 			return;
 
-		if ( function_exists( 'bbl_get_base_post_type' ) )
-			$type = bbl_get_base_post_type( $post->post_type );
-		else
-			$type = $post->post_type;
+		$post_type = $post->post_type;
 
-		if ( 'video' != $type )
+		if ( function_exists( 'bbl_get_base_post_type' ) )
+			$post_type = bbl_get_base_post_type( $post->post_type );
+
+		if ( ! post_type_supports( $post_type, 'video-library' ) )
 			return;
 
 		// Check that the fields were included on the screen, we
@@ -272,14 +298,32 @@ class Admin {
 
 			$media->update_details();
 
-			if ( ! has_post_thumbnail( $post->ID ) and $thumbnail_url = $media->get_field( 'thumbnail_url' ) ) {
+			if ( post_type_supports( $post_type, 'thumbnail' ) and ! has_post_thumbnail( $post->ID ) ) {
 
-				$filename = $post->post_name . '-' . basename( $thumbnail_url );
-				$photo    = new ExternalPhoto( $thumbnail_url );
+				switch ( $details->type ) {
 
-				if ( $photo->import( $filename ) ) {
-					$photo->attach_to( $post );
-					set_post_thumbnail( $post->ID, $photo->get_attachment_ID() );
+					case 'photo':
+						$field = 'url';
+						break;
+
+					case 'rich':
+					case 'link':
+					case 'video':
+						$field = 'thumbnail_url';
+						break;
+
+				}
+
+				if ( $thumbnail_url = $media->get_field( $field ) ) {
+
+					$filename = $post->post_name . '-' . basename( $thumbnail_url );
+					$photo    = new ExternalPhoto( $thumbnail_url );
+
+					if ( $photo->import( $filename ) ) {
+						$photo->attach_to( $post );
+						set_post_thumbnail( $post->ID, $photo->get_attachment_ID() );
+					}
+
 				}
 
 			}
@@ -316,7 +360,7 @@ class Admin {
 
 		$num_video = wp_count_posts( 'video' );
 		$num = number_format_i18n( $num_video->publish );
-		$text = _n( 'External Media Item', 'External Media Items', $num_video->publish, 'video-library' );
+		$text = _n( 'Video', 'Videos', $num_video->publish, 'video-library' );
 		# @TODO correct cap:
 		if ( current_user_can( 'edit_posts' ) ) {
 			$num = "<a href='edit.php?post_type=video'>$num</a>";

@@ -29,12 +29,12 @@ class Template {
 		if ( ! is_singular() )
 			return $content;
 		
+		$post_type = get_post_type();
+
 		if ( function_exists( 'bbl_get_base_post_type' ) )
-			$type = bbl_get_base_post_type( get_post_type() );
-		else
-			$type = get_post_type();
+			$post_type = bbl_get_base_post_type( $post_type );
 		
-		if ( 'video' != $type )
+		if ( ! post_type_supports( $post_type, 'video-library-prepend' ) )
 			return $content;
 
 		$media = new PostMedia( get_the_ID() );

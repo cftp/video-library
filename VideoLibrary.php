@@ -40,16 +40,21 @@ class VideoLibrary extends Plugin {
 
 	}
 
-	public function get_oembed_provider( $url ) {
-
-		if ( ! trim( $url ) )
-			return false;
-
-		# See http://core.trac.wordpress.org/ticket/24381
+	public function get_oembed_provider( $url, $post_type ) {
 
 		$provider = false;
 
-		foreach ( $this->providers as $matchmask => $data ) {
+		if ( ! trim( $url ) )
+			return $provider;
+
+		$providers = $this->get_oembed_providers();
+
+		if ( ! isset( $providers[$post_type] ) or empty( $providers[$post_type] ) )
+			return $provider;
+
+		# See http://core.trac.wordpress.org/ticket/24381
+
+		foreach ( $providers[$post_type] as $matchmask => $data ) {
 			list( $providerurl, $regex ) = $data;
 
 			// Turn the asterisk-type provider URLs into regex
@@ -68,11 +73,14 @@ class VideoLibrary extends Plugin {
 
 	}
 
-	public function action_plugins_loaded() {
+	public function get_oembed_providers() {
+
+		if ( !empty( $this->providers ) )
+			return $this->providers;
 
 		# This is a subset of WordPress' supported oEmbed providers. We're limiting this
-		# list to video services, however in theory any oEmbed provider will work. 
-		$this->services = apply_filters( 'video_library_services', array(
+		# list to video services, however any oEmbed provider will work. 
+		$services = apply_filters( 'video_library_services', array(
 			'youtube.com'     => 'YouTube',
 			'blip.tv'         => 'Blip.tv',
 			'vimeo.com'       => 'Vimeo',
@@ -84,12 +92,29 @@ class VideoLibrary extends Plugin {
 			'wordpress.tv'    => 'WordPress.tv',
 		) );
 
-		foreach ( _wp_oembed_get_object()->providers as $matchmask => $data ) {
-			foreach ( $this->services as $domain => $service ) {
-				if ( false !== strpos( $data[0], $domain ) )
-					$this->providers[$matchmask] = $data;
+		foreach ( $this->get_post_types() as $post_type ) {
+
+			$support = get_all_post_type_supports( $post_type );
+
+			if ( is_array( $support['video-library'] ) )
+				$post_type_services = reset( $support['video-library'] );
+			else
+				$post_type_services = $services;
+
+			foreach ( _wp_oembed_get_object()->providers as $matchmask => $data ) {
+				foreach ( $post_type_services as $domain => $service ) {
+					if ( false !== strpos( $data[0], $domain ) )
+						$this->providers[$post_type][$matchmask] = $data;
+				}
 			}
+
 		}
+
+		return $this->providers;
+
+	}
+
+	public function action_plugins_loaded() {
 
 		$this->structure = new Structure;
 
@@ -97,6 +122,19 @@ class VideoLibrary extends Plugin {
 			$this->admin = new Admin;
 		else
 			$this->template = new Template;
+
+	}
+
+	public function get_post_types() {
+		
+		$post_types = array();
+
+		foreach ( get_post_types() as $post_type ) {
+			if ( post_type_supports( $post_type, 'video-library' ) )
+				$post_types[] = $post_type;
+		}
+
+		return $post_types;
 
 	}
 

@@ -21,10 +21,10 @@ class oEmbed {
 	public $url         = null;
 	public $provider    = null;
 
-	public function __construct( $url ) {
+	public function __construct( $url, $post_type ) {
 
 		$this->url      = $url;
-		$this->provider = VideoLibrary::init()->get_oembed_provider( $url );
+		$this->provider = VideoLibrary::init()->get_oembed_provider( $url, $post_type );
 
 	}
 
@@ -35,7 +35,45 @@ class oEmbed {
 
 		$args = wp_parse_args( $args, wp_embed_defaults() );
 
-		return _wp_oembed_get_object()->fetch( $this->provider, $this->url, $args );
+		$details = _wp_oembed_get_object()->fetch( $this->provider, $this->url, $args );
+
+		if ( $details )
+			$details->html = $this->get_html( $details );
+
+		return $details;
+
+	}
+
+	public function get_html( $details ) {
+
+		if ( isset( $details->html ) and ! empty( $details->html ) )
+			return $details->html;
+
+		switch ( $details->type ) {
+
+			case 'photo':
+				if ( isset( $details->web_page ) and ! empty( $details->web_page ) ) {
+					return sprintf( '<a href="%s"><img src="%s" alt="" /></a>',
+						esc_url( $details->web_page ),
+						esc_url( $details->url )
+					);
+				} else {
+					return sprintf( '<img src="%s" alt="" />',
+						esc_url( $details->url )
+					);
+				}
+				break;
+
+			case 'link':
+				return sprintf( '<a href="%s">%s</a>',
+					esc_url( $details->url ),
+					esc_html( $details->title )
+				);
+				break;
+
+		}
+
+		return null;
 
 	}
 

@@ -21,6 +21,7 @@ class Structure {
 	public function __construct() {
 
 		add_action( 'init', array( $this, 'action_init' ) );
+		add_action( 'init', array( $this, 'action_init_late' ), 99 );
 
 	}
 
@@ -28,7 +29,6 @@ class Structure {
 
 		register_post_type( 'video', apply_filters( 'video_library_post_type_args', array(
 			'labels' => array(
-				# @TODO other labels:
 				'name'               => _x( 'Videos', 'post type general name', 'video-library' ),
 				'singular_name'      => _x( 'Video', 'post type singular name', 'video-library' ),
 				'add_new_item'       => __( 'Add New Video', 'video-library' ),
@@ -43,7 +43,7 @@ class Structure {
 			),
 			'public' => true,
 			'rewrite' => array(
-				'slug'       => 'media', # @TODO <- "videos"?
+				'slug'       => 'videos',
 				'with_front' => false,
 			),
 			'capability_type' => 'page',
@@ -54,11 +54,17 @@ class Structure {
 				'editor',
 				'thumbnail',
 				'comments',
+				'video-library',
+				'video-library-prepend',
 			),
 			'has_archive' => true
 		) ) );
 
-		register_taxonomy( 'mediasource', 'video', apply_filters( 'video_library_mediasource_args', array(
+	}
+
+	public function action_init_late() {
+
+		register_taxonomy( 'mediasource', VideoLibrary::init()->get_post_types(), apply_filters( 'video_library_mediasource_args', array(
 			'public' => true,
 			'hierarchical' => false,
 			'show_ui' => false,
