@@ -39,6 +39,7 @@ class Admin {
 		add_action( 'load-post.php',                array( $this, 'action_load_post' ) );
 		add_action( 'load-post-new.php',            array( $this, 'action_load_post' ) );
 		add_action( 'admin_enqueue_scripts',        array( $this, 'enqueue_styles' ) );
+		add_action( 'manage_video_posts_custom_column', array( $this, 'action_video_posts_custom_column' ), 10, 2 );
 
 		# AJAX Actions:
 		add_action( 'wp_ajax_video_library_fetch',  array( $this, 'ajax_fetch' ) );
@@ -115,7 +116,26 @@ class Admin {
 		if ( isset( $columns['taxonomy-mediasource'] ) )
 			$columns['taxonomy-mediasource'] = get_taxonomy( 'mediasource' )->labels->singular_name;
 
+		# Add a featured image column for niceness
+		if ( post_type_supports( $post_type, 'video-library' ) and post_type_supports( $post_type, 'thumbnail' ) ) {
+			$columns = array_merge( array(
+				'cb' => $columns['cb'],
+				'video-library-thumbnail' => ''
+			), $columns );
+		}
+
 		return $columns;
+
+	}
+
+	public function action_video_posts_custom_column( $col, $post_id ) {
+
+		if ( ( 'video-library-thumbnail' == $col ) and has_post_thumbnail( $post_id ) ) {
+			printf( '<a href="%s">%s</a>',
+				get_edit_post_link( $post_id ),
+				get_the_post_thumbnail( $post_id, array( 80, 60 ) )
+			);
+		}
 
 	}
 

@@ -55,3 +55,10 @@ GNU General Public License for more details.
 	height: 16px;
 	display: block;
 }
+
+.widefat .column-video-library-thumbnail {
+	width: 80px;
+	text-align: center;
+	padding-top: 8px;
+	padding-bottom: 8px;
+}
