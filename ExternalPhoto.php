@@ -48,7 +48,7 @@ class ExternalPhoto {
 
 	}
 
-	public function attach_to( $post_id ) {
+	public function attach_to( $post_id, $title = null ) {
 
 		$post = get_post( $post_id );
 
@@ -60,9 +60,12 @@ class ExternalPhoto {
 
 		$filetype = wp_check_filetype( basename( $attachment['file'] ), null );
 
+		if ( !$title )
+			$title = sprintf( '%s Thumbnail', $post->post_title );
+
 		$postinfo = array(
 			'post_mime_type' => $filetype['type'],
-			'post_title'     => $post->post_title . ' thumbnail',
+			'post_title'     => $title,
 			'post_status'    => 'inherit'
 		);
 		$attach_id = wp_insert_attachment( $postinfo, $attachment['file'], $post->ID );

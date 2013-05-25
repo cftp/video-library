@@ -4,7 +4,7 @@ Plugin Name: Video Library
 Plugin URI:  https://github.com/cftp/video-library
 Description: Creates a new custom post type for exernal videos
 Author:      Code For The People
-Version:     2.1
+Version:     2.1.1
 Author URI:  http://codeforthepeople.com/
 Text Domain: video-library
 Domain Path: /languages/

@@ -252,7 +252,9 @@ class Admin {
 
 		?>
 		<div id="video-library-preview">
-			<?php echo $media->get_embed_code( $this->preview_args ); ?>
+			<div class="previewer">
+				<?php echo $media->get_embed_code( $this->preview_args ); ?>
+			</div>
 		</div>
 		<?php
 
@@ -350,7 +352,7 @@ class Admin {
 			$photo    = new ExternalPhoto( $thumbnail_url );
 
 			if ( $photo->import( $filename ) ) {
-				$photo->attach_to( $post );
+				$photo->attach_to( $post, $details->title );
 				return $photo;
 			}
 

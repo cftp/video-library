@@ -13,76 +13,211 @@ GNU General Public License for more details.
 
 */
 
-jQuery( function( $ ) {
+// Video model
 
-	$( '#video-library-url-div' ).insertBefore( '#titlediv' );
+var VideoModel = Backbone.Model.extend({
 
-	if ( !$( '#video-library-url' ).val() )
-		$( '#video-library-url' ).focus();
+	initialize : function() {
+		this.on( 'change:imported_thumbnail_id', this.setThumb, this );
+	},
 
-	$( '#video-library-url' ).on( 'paste drop', function() {
+	setVideo : function( url ) {
 
-		_.defer( function( el ) {
+		this.set( 'url', url );
+		this.trigger( 'doLoading' );
 
-			var url = $.trim( $(el).val() );
-			var args = {
-				action  : 'video_library_fetch',
-				url     : url,
-				post_id : vl.post.id
-			};
+		jQuery.post( ajaxurl, {
+
+			action  : 'video_library_fetch',
+			url     : url,
+			post_id : this.get('post').id
+
+		}, _.bind( function( response ) {
+
+			this.trigger( 'doLoaded' );
+
+			if ( response.success ) {
+
+				// We could short-circuit this with `this.set( response.data )` but the below adds clarity
+				if ( response.data.imported_thumbnail_id )
+					this.set( 'imported_thumbnail_id', response.data.imported_thumbnail_id );
+				if ( response.data.favicon )
+					this.set( 'favicon', response.data.favicon );
+				if ( response.data.title )
+					this.set( 'title', response.data.title );
+				if ( response.data.html )
+					this.set( 'html', response.data.html );
+
+			} else if ( response.data.error_message ) {
+
+				this.trigger( 'doError', response.data.error_message )
+
+			}
+
+		}, this ), 'json' );
+
+	},
+
+	setThumb : function( model, value ) {
+
+		wp.media.post( 'set-post-thumbnail', {
+			json         : true,
+			post_id      : this.get('post').id,
+			_wpnonce     : this.get('post').nonce,
+			thumbnail_id : value
+		} ).done( _.bind( function( html ) {
+			this.set( 'imported_thumbnail_markup', html );
+		}, this ) );
+
+	}
+
+});
+
+// Video input view
+
+var VideoInput = Backbone.View.extend({
+
+	events : {
+		'paste :input[name="video-library-url"]' : 'doChange',
+		'drop :input[name="video-library-url"]'  : 'doChange'
+	},
+
+	initialize : function ( options ) {
+
+		this.model.on( 'doLoading', this.doLoading, this );
+		this.model.on( 'doLoaded',  this.doLoaded,  this );
+		this.model.on( 'doError',   this.doError,   this );
+
+	},
+
+	doChange : function( event ) {
+
+		_.defer( _.bind( function( event ) {
+
+			var url = this.$( event ).val();
 
 			if ( !url )
 				return;
 
-			// show spinner
-			$( '#video-library-url-div .favicon' ).hide();
-			$( '#video-library-url-div .spinner' ).show();
+			this.model.setVideo( url );
 
-			$.post( ajaxurl, args, function( response ) {
+		}, this ), [ event.currentTarget ] );
 
-				// hide spinner
-				$( '#video-library-url-div .spinner' ).hide();
+	},
 
-				if ( response.success ) {
+	doLoading : function() {
+		this.$( '.favicon' ).hide();
+		this.$( '.spinner' ).show();
+	},
 
-					// set thumbnail if response.data.imported_thumbnail_id exists
-					if ( response.data.imported_thumbnail_id ) {
-						wp.media.post( 'set-post-thumbnail', {
-							json:         true,
-							post_id:      vl.post.id,
-							_wpnonce:     vl.post.nonce,
-							thumbnail_id: response.data.imported_thumbnail_id
-						}).done( function( html ) {
-							$( '.inside', '#postimagediv' ).html( html );
-						});
-					}
+	doLoaded : function() {
+		this.$( '.spinner' ).hide();
+	},
 
-					if ( response.data.favicon )
-						$( '#video-library-url-div .favicon' ).css( 'background-image', 'url("' + response.data.favicon + '")' ).show();
+	doError : function( message ) {
+		alert( message );
+	}
 
-					// @TODO set content if content field is empty
+});
 
-					// set title if title field is empty
-					if ( !$( '#title' ).val() ) {
-						$( '#title-prompt-text' ).addClass( 'screen-reader-text' );
-						$( '#title' ).val( response.data.title );
-					}
+// Video thumbnail view
 
-					// display preview using response html
-					$( '#video-library-preview' ).html( response.data.html );
+var VideoThumbnail = Backbone.View.extend({
 
-				} else if ( response.data.error_message ) {
+	initialize : function ( options ) {
 
-					alert( response.data.error_message );
+		this.$( '.inside' ).append( '<p class="description">' + options.note + '</p>' );
 
-				}
+		this.model.on( 'change:imported_thumbnail_markup', this.setThumbnail, this );
 
-			}, 'json' );
+	},
 
-		}, [ this ] );
+	setThumbnail : function( model, value ) {
+		this.$( '.inside' ).html( value );
+	}
 
+});
+
+// Video preview view
+
+var VideoPreview = Backbone.View.extend({
+
+	initialize : function ( options ) {
+		this.model.on( 'change:html', this.setPreview, this );
+	},
+
+	setPreview : function( model, value ) {
+		this.$('.previewer').html( value );
+	}
+
+});
+
+// Video title view
+
+var VideoTitle = Backbone.View.extend({
+
+	initialize : function ( options ) {
+		this.model.on( 'change:title', this.setTitle, this );
+	},
+
+	setTitle : function( model, value ) {
+		if ( !this.$( '#title' ).val() ) {
+			this.$( '#title-prompt-text' ).addClass( 'screen-reader-text' );
+			this.$( '#title' ).val( value );
+		}
+	}
+
+});
+
+// Video favicon view
+
+var VideoFavicon = Backbone.View.extend({
+
+	initialize : function ( options ) {
+		this.model.on( 'change:favicon', this.setFavicon, this );
+	},
+
+	setFavicon : function( model, value ) {
+		this.$( '.favicon' ).css( 'background-image', 'url("' + value + '")' ).show();
+	}
+
+});
+
+
+
+jQuery( function( $ ) {
+
+	var vid = new VideoModel({
+		post : vl.post
+	});
+
+	new VideoInput( {
+		model : vid,
+		el    : $( '#video-library-url-div' )
+	} );
+	new VideoThumbnail( {
+		note  : vl.featured_image_note,
+		model : vid,
+		el    : $( '#postimagediv' )
+	} );
+	new VideoPreview( {
+		model : vid,
+		el    : $( '#video-library-preview' )
+	} );
+	new VideoTitle( {
+		model : vid,
+		el    : $( '#titlediv' )
+	} );
+	new VideoFavicon( {
+		model : vid,
+		el    : $( '#video-library-url-div' )
 	} );
 
-	$( '#postimagediv .inside' ).append( '<p class="description">' + vl.featured_image_note + '</p>' );
+	/* Shift the URL field above the title field */
+	$( '#video-library-url-div' ).insertBefore( '#titlediv' );
+
+	/* Focus the URL field */
+	if ( !$( '#video-library-url' ).val() )
+		$( '#video-library-url' ).focus();
 
 } );
