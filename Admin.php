@@ -39,7 +39,8 @@ class Admin {
 		add_action( 'load-post.php',                array( $this, 'action_load_post' ) );
 		add_action( 'load-post-new.php',            array( $this, 'action_load_post' ) );
 		add_action( 'admin_enqueue_scripts',        array( $this, 'enqueue_styles' ) );
-		add_action( 'manage_video_posts_custom_column', array( $this, 'action_video_posts_custom_column' ), 10, 2 );
+		add_action( 'manage_pages_custom_column',   array( $this, 'action_video_posts_custom_column' ), 10, 2 );
+		add_action( 'manage_posts_custom_column',   array( $this, 'action_video_posts_custom_column' ), 10, 2 );
 
 		# AJAX Actions:
 		add_action( 'wp_ajax_video_library_fetch',  array( $this, 'ajax_fetch' ) );
@@ -226,13 +227,13 @@ class Admin {
 
 		wp_nonce_field( "video-library-{$post->ID}", '_video_library_nonce' );
 
-		// Here we're adding our faux-metabox for the video URL field
+		// Here we're adding our faux-metabox for the URL field
 
 		?>
 		<div id="video-library-url-div">
 			<div id="video-library-url-wrap">
 
-				<input type="text" placeholder="<?php esc_attr_e( 'Enter video page URL here', 'video-library' ); ?>" name="video-library-url" size="30" value="<?php echo esc_url( $media->get_url() ); ?>" id="video-library-url" autocomplete="off" />
+				<input type="text" placeholder="<?php esc_attr_e( 'Enter URL here', 'video-library' ); ?>" name="video-library-url" size="30" value="<?php echo esc_url( $media->get_url() ); ?>" id="video-library-url" autocomplete="off" />
 				<span class="spinner"></span>
 				<?php if ( $favicon ) { ?>
 					<span class="favicon" style="background-image: url('<?php echo $favicon; ?>')"></span>
