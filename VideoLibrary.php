@@ -30,7 +30,7 @@ class VideoLibrary extends Plugin {
 
 	}
 
-	public function init( $file = null ) {
+	public static function init( $file = null ) {
 		static $instance = null;
 
 		if ( !$instance )
