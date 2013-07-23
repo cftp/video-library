@@ -92,9 +92,9 @@ var VideoInput = Backbone.View.extend({
 
 	doChange : function( event ) {
 
-		_.defer( _.bind( function( event ) {
+		_.defer( _.bind( function( target ) {
 
-			var url = this.$( event ).val();
+			var url = this.$( target ).val();
 
 			if ( !url )
 				return;

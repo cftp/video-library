@@ -4,7 +4,7 @@ Plugin Name: Video Library
 Plugin URI:  https://github.com/cftp/video-library
 Description: Creates a new custom post type for exernal videos
 Author:      Code For The People
-Version:     2.1.1
+Version:     2.1.2
 Author URI:  http://codeforthepeople.com/
 Text Domain: video-library
 Domain Path: /languages/
@@ -26,7 +26,7 @@ GNU General Public License for more details.
 
 defined( 'ABSPATH' ) or die();
 
-spl_autoload_register( function( $class ) {
+function video_library_autoloader( $class ) {
 
 	if ( false === strpos( $class, 'VideoLibrary' ) )
 		return;
@@ -43,7 +43,9 @@ spl_autoload_register( function( $class ) {
 	if ( is_readable( $file ) )
 		include $file;
 
-} );
+}
+
+spl_autoload_register( 'video_library_autoloader' );
 
 # Load required files
 require_once ABSPATH . WPINC . '/class-oembed.php';
