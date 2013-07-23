@@ -97,11 +97,11 @@ class Admin {
 
 	}
 
-	public function filter_post_empty_content( $maybe_empty, $post_arr ) {
+	public function filter_post_empty_content( $maybe_empty, array $post_arr ) {
 
 		$post_type = $post_arr['post_type'];
 
-		if ( function_exists('bbl_get_base_post_type') )
+		if ( function_exists( 'bbl_get_base_post_type' ) )
 			$post_type = bbl_get_base_post_type( $post_type );
 
 		if ( post_type_supports( $post_type, 'video-library' ) )
@@ -111,7 +111,7 @@ class Admin {
 
 	}
 
-	public function filter_posts_columns( $columns, $post_type ) {
+	public function filter_posts_columns( array $columns, $post_type ) {
 
 		# Replace the 'name' label with 'singular_name'
 		if ( isset( $columns['taxonomy-mediasource'] ) )
@@ -140,7 +140,7 @@ class Admin {
 
 	}
 
-	public function action_add_meta_boxes( $post_type, $post ) {
+	public function action_add_meta_boxes( $post_type, \WP_Post $post ) {
 
 		if ( ! post_type_supports( $post_type, 'video-library' ) )
 			return;
@@ -247,7 +247,7 @@ class Admin {
 
 	}
 
-	public function metabox_meta( $post, $args ) {
+	public function metabox_meta( \WP_Post $post, array $args ) {
 
 		$media = new PostMedia( $post );
 
@@ -261,7 +261,7 @@ class Admin {
 
 	}
 
-	public function action_save_post( $post_id, $post ) {
+	public function action_save_post( $post_id, \WP_Post $post ) {
 
 		if ( $this->no_recursion )
 			return;
@@ -328,7 +328,7 @@ class Admin {
 
 	}
 
-	public function fetch_thumbnail( $post_id, $details ) {
+	public function fetch_thumbnail( $post_id, \stdClass $details ) {
 
 		$post = get_post( $post_id );
 

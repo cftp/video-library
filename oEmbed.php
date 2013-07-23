@@ -44,7 +44,7 @@ class oEmbed {
 
 	}
 
-	public function get_html( $details ) {
+	public function get_html( \stdClass $details ) {
 
 		if ( isset( $details->html ) and ! empty( $details->html ) )
 			return $details->html;
