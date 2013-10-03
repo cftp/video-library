@@ -33,6 +33,8 @@ class oEmbed {
 		if ( ! $this->url or ! $this->provider )
 			return false;
 
+		require_once ABSPATH . WPINC . '/class-oembed.php';
+
 		$args = wp_parse_args( $args, wp_embed_defaults() );
 
 		$details = _wp_oembed_get_object()->fetch( $this->provider, $this->url, $args );

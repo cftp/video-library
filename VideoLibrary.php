@@ -78,6 +78,8 @@ class VideoLibrary extends Plugin {
 		if ( !empty( $this->providers ) )
 			return $this->providers;
 
+		require_once ABSPATH . WPINC . '/class-oembed.php';
+
 		# This is a subset of WordPress' supported oEmbed providers. We're limiting this
 		# list to video services, however any oEmbed provider will work. 
 		$services = apply_filters( 'video_library_services', array(
