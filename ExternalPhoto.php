@@ -66,7 +66,8 @@ class ExternalPhoto {
 		$postinfo = array(
 			'post_mime_type' => $filetype['type'],
 			'post_title'     => $title,
-			'post_status'    => 'inherit'
+			'post_status'    => 'inherit',
+			'post_content'   => '',
 		);
 		$attach_id = wp_insert_attachment( $postinfo, $attachment['file'], $post->ID );
 
